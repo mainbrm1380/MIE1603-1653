@@ -75,7 +75,7 @@ for g in range(max_min_groups):
 			  #if column and level are in the group, so is the element
         model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
 
-model.setObjective(gp.quicksum(group_lower_bound) - gp.quicksum(group_upper_bound) + 100*gp.quicksum(group_exists),GRB.MINIMIZE)
+model.setObjective(-gp.quicksum(group_lower_bound) + gp.quicksum(group_upper_bound) + 100*gp.quicksum(group_exists),GRB.MINIMIZE)
 
 model.write("group-optim-toy.lp")
 
