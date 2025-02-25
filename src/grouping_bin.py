@@ -75,7 +75,7 @@ for g in range(max_min_groups):
       #if not in the group, it's greater than (at most) 0
       #TODO: these are problems constraints.
       model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - (M_sections+1)*(1-x[g,c,l]))
-      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) <= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - (M_sections+1)*(1-x[g,c,l]))
+      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) <= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) + (M_sections+1)*(1-x[g,c,l]))
       
       #if element is in group, that column is in the group 
       model.addConstr(column_in_group[g,c] >= x[g,c,l])
@@ -85,31 +85,31 @@ for g in range(max_min_groups):
 
       #if element is in that group, that group exists
       model.addConstr(group_exists[g] >= x[g,c,l])
-  
-  for g in range(max_min_groups):
-    for l in range(n_levels):
 
-      #calculate upper, lower level
-      #NOTE: need to min(Ug) and max(Lg) for this to work
-      #NOTE: in julia, everything is 1 based, might need to adjust formulation to make everything work as 0-based
-      model.addConstr(l*level_in_group[g,l] <= group_upper_bound[g])
-      model.addConstr(l*level_in_group[g,l] + M*(1-level_in_group[g,l]) >= group_lower_bound[g])     
+for g in range(max_min_groups):
+  for l in range(n_levels):
 
-      #set Zl
-      model.addConstr(M*Zl[g,l] >= l-group_lower_bound[g]+1)
-      model.addConstr(M*(1-Zl[g,l]) >= group_lower_bound[g]-l)
+    #calculate upper, lower level
+    #NOTE: need to min(Ug) and max(Lg) for this to work
+    #NOTE: in julia, everything is 1 based, might need to adjust formulation to make everything work as 0-based
+    model.addConstr(l*level_in_group[g,l] <= group_upper_bound[g])
+    model.addConstr(l*level_in_group[g,l] + M*(1-level_in_group[g,l]) >= group_lower_bound[g])     
 
-      #set Zu
-      model.addConstr(M*Zu[g,l] >= group_upper_bound[g]-l+1)
-      model.addConstr(M*(1-Zu[g,l]) >= l-group_upper_bound[g])
+    #set Zl
+    model.addConstr(M*Zl[g,l] >= l-group_lower_bound[g]+1)
+    model.addConstr(M*(1-Zl[g,l]) >= group_lower_bound[g]-l)
 
-			#if a level is within lower/upper bound, it's in the group 
-      model.addConstr(1+level_in_group[g,l] >= Zu[g,l]+Zl[g,l])
+    #set Zu
+    model.addConstr(M*Zu[g,l] >= group_upper_bound[g]-l+1)
+    model.addConstr(M*(1-Zu[g,l]) >= l-group_upper_bound[g])
 
-      for c in range(n_cols):
-			  #if column and level are in the group, so is the element
-        #todo: lazily constraint??
-        model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
+    #if a level is within lower/upper bound, it's in the group 
+    model.addConstr(1+level_in_group[g,l] >= Zu[g,l]+Zl[g,l])
+
+    for c in range(n_cols):
+      #if column and level are in the group, so is the element
+      #todo: lazily constraint??
+      model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
 
 model.setObjective(gp.quicksum(element_section[c,l,s] * SectionCost[s] for s in range(M_sections) for c in range(n_cols) for l in range(n_levels)) + 100*gp.quicksum(group_exists),GRB.MINIMIZE)
 
