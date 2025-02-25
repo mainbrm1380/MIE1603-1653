@@ -1,11 +1,11 @@
 import gurobipy as gp
 from gurobipy import GRB
 
-test_data = [[1,1,1],[1,1,1],[1,1,0]] #e_ij = 1 if col i exists at level j, bottom to top
+test_data = [[0,1,1,1],[1,1,1,0],[1,1,0,0]] #e_ij = 1 if col i exists at level j, bottom to top
 
 n_cols = len(test_data)
 n_levels = len(test_data[0])
-max_min_groups = 3 #min(n_cols,n_levels)
+max_min_groups = min(n_cols,n_levels)
 M = n_levels + 2
 
 Xgcl = [(g,c,l) for l in range(n_levels) for c in range(n_cols) for g in range(max_min_groups)]
@@ -61,12 +61,12 @@ for g in range(max_min_groups):
       model.addConstr(l*level_in_group[g,l] + M*(1-level_in_group[g,l]) >= group_lower_bound[g])     
 
       #set Zl
-      model.addConstr(M*Zl[g,l] >= (l+1)-group_lower_bound[g]+1)
-      model.addConstr(M*(1-Zl[g,l]) >= group_lower_bound[g]-(l+1))
+      model.addConstr(M*Zl[g,l] >= l-group_lower_bound[g]+1)
+      model.addConstr(M*(1-Zl[g,l]) >= group_lower_bound[g]-l)
 
       #set Zu
-      model.addConstr(M*Zu[g,l] >= group_upper_bound[g]-(l+1)+1)
-      model.addConstr(M*(1-Zu[g,l]) >= (l+1)-group_upper_bound[g])
+      model.addConstr(M*Zu[g,l] >= group_upper_bound[g]-l+1)
+      model.addConstr(M*(1-Zu[g,l]) >= l -group_upper_bound[g])
 
 			#if a level is within lower/upper bound, it's in the group 
       model.addConstr(1+level_in_group[g,l] >= Zu[g,l]+Zl[g,l])
