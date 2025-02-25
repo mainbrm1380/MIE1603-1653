@@ -74,8 +74,8 @@ for g in range(max_min_groups):
       #if element is in a group, it's section is at least the group's
       #if not in the group, it's greater than (at most) 0
       #TODO: these are problems constraints.
-      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - M_sections*(1-x[g,c,l]))
-      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) <= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - M_sections*(1-x[g,c,l]))
+      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - (M_sections+1)*(1-x[g,c,l]))
+      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) <= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - (M_sections+1)*(1-x[g,c,l]))
       
       #if element is in group, that column is in the group 
       model.addConstr(column_in_group[g,c] >= x[g,c,l])
