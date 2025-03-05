@@ -1,12 +1,12 @@
 import gurobipy as gp
 from gurobipy import GRB
 
-test_data = [[0,2,1,1,0],[1,1,1,1,0]] #e_ij = 1 if col i exists at level j, bottom to top
+test_data = [[4,2,1,1,0],[1,1,1,1,0], [3,2,1,1,1],[4,3,3,3,1],[0,0,2,2,0],[8,8,7,6,3]] #e_ij = 1 if col i exists at level j, bottom to top
 
 
 n_cols = len(test_data)
 n_levels = len(test_data[0])
-max_min_groups = 4 #min(n_cols,n_levels) #TODO: NEED NEW HEURISTIC FOR THIS
+max_min_groups = 15 #min(n_cols,n_levels) #TODO: NEED NEW HEURISTIC FOR THIS
 M = n_levels + 2
 M_sections = max([max(i) for i in test_data]) + 1
 
@@ -18,7 +18,7 @@ Es = [(c,l,s) for s in range(M_sections) for l in range(n_levels) for c in range
 S = {(i,j): test_data[i][j] for j in range(n_levels) for i in range(n_cols)}
 S_bin = {(i,j,s): 1 if s >= test_data[i][j] else 0 for s in range(M_sections) for j in range(n_levels) for i in range(n_cols)}
 E = {(i,j): 1 if test_data[i][j] > 0 else 0 for j in range(n_levels) for i in range(n_cols)}
-sections = set(l for l in S.values())
+
 
 # Create a new model
 model = gp.Model("Grouping-Optimization")
@@ -27,7 +27,9 @@ model = gp.Model("Grouping-Optimization")
 
 x = model.addVars(Xgcl, vtype = GRB.BINARY, name="x")
 
-SectionCost = [10,200,500]
+GroupCost = 1000
+SectionCost = [0,100,400,800,1600,3200,6400,12800,14000]
+sections = set(i for i in range(len(SectionCost)))
 
 group_exists = model.addVars(max_min_groups, vtype = GRB.BINARY, name="group")
 column_in_group = model.addVars(max_min_groups, n_cols, vtype = GRB.BINARY, name="col_in_group")
@@ -75,7 +77,7 @@ for g in range(max_min_groups):
       #if not in the group, it's greater than (at most) 0
       #TODO: these are problems constraints.
       model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - (M_sections+1)*(1-x[g,c,l]))
-      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) <= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) - (M_sections+1)*(1-x[g,c,l]))
+      model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) <= gp.quicksum(s * group_section[g,s] for s in range(M_sections)) + (M_sections+1)*(1-x[g,c,l]))
       
       #if element is in group, that column is in the group 
       model.addConstr(column_in_group[g,c] >= x[g,c,l])
@@ -111,7 +113,7 @@ for g in range(max_min_groups):
         #todo: lazily constraint??
         model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
 
-model.setObjective(gp.quicksum(element_section[c,l,s] * SectionCost[s] for s in range(M_sections) for c in range(n_cols) for l in range(n_levels)) + 100*gp.quicksum(group_exists),GRB.MINIMIZE)
+model.setObjective(gp.quicksum(element_section[c,l,s] * SectionCost[s] for s in range(M_sections) for c in range(n_cols) for l in range(n_levels)) + GroupCost*gp.quicksum(group_exists),GRB.MINIMIZE)
 
 # model.write("group-optim-toy.lp")
 
