@@ -1,13 +1,15 @@
 import gurobipy as gp
 from gurobipy import GRB
+from instance_generation import generate_instance
 
 test_data = [[0,2,1,1,0],[1,1,1,1,0]] #e_ij = 1 if col i exists at level j, bottom to top
-
 
 n_cols = len(test_data)
 n_levels = len(test_data[0])
 max_min_groups = 4 #min(n_cols,n_levels) #TODO: NEED NEW HEURISTIC FOR THIS
 M = n_levels + 2
+test_data = generate_instance()
+
 
 Xgcl = [(g,c,l) for l in range(n_levels) for c in range(n_cols) for g in range(max_min_groups)]
 
@@ -56,6 +58,9 @@ for c in range(n_cols):
     #sum of Xgcl over all groups must = if col at that level exists
     model.addConstr(gp.quicksum(x[g,c,l] for g in range(max_min_groups)) == E[c,l])
     model.addConstr(element_section[c,l] >= S[c,l])
+  
+  for l in range(n_levels-1):
+    model.addConstr(element_section[c,l+1] >= element_section[c,l])
 
 for g in range(max_min_groups):
   #range of group g = upper bound - lower bound 
