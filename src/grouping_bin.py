@@ -1,7 +1,17 @@
 import gurobipy as gp
 from gurobipy import GRB
+from instance_generation import generate_instance, generate_section_costs
 
-test_data = [[4,2,1,1,0],[1,1,1,1,0], [3,2,1,1,1],[4,3,3,3,1],[0,0,2,2,0],[8,8,7,6,3]] #e_ij = 1 if col i exists at level j, bottom to top
+# test_data = [[4,2,1,1,0],[1,1,1,1,0], [3,2,1,1,1],[4,3,3,3,1],[0,0,2,2,0],[8,8,7,6,3]] #e_ij = 1 if col i exists at level j, bottom to top
+#INSTANCE GENERATION
+num_Sections = 20
+num_Cols = 10
+num_Levels = 10
+min_section_cost = 100
+max_section_cost = 10000
+
+test_data = generate_instance(num_Sections,num_Cols,num_Levels,min_s_in_c=1,max_s_in_c=4)
+SectionCost = generate_section_costs(num_Sections,min_section_cost,max_section_cost)
 
 
 n_cols = len(test_data)
@@ -27,11 +37,11 @@ model = gp.Model("Grouping-Optimization")
 
 x = model.addVars(Xgcl, vtype = GRB.BINARY, name="x")
 
-GroupCost = 1000
-SectionCost = [0,100,400,800,1600,3200,6400,12800,14000]
+GroupCost = 0
+# SectionCost = [0,100,400,800,1600,3200,6400,12800,14000]
 sections = set(i for i in range(len(SectionCost)))
 
-group_exists = model.addVars(max_min_groups, vtype = GRB.BINARY, name="group")
+group_exists = model.addVars(max_min_groups, vtype = GRB.BINARY, name="group_exists")
 column_in_group = model.addVars(max_min_groups, n_cols, vtype = GRB.BINARY, name="col_in_group")
 level_in_group = model.addVars(max_min_groups, n_levels, vtype = GRB.BINARY, name="level_in_group")
 
@@ -61,7 +71,10 @@ for c in range(n_cols):
     #sum of Xgcl over all groups must = if col at that level exists
     model.addConstr(gp.quicksum(x[g,c,l] for g in range(max_min_groups)) == E[c,l])
     model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) >= S[c,l])
-    model.addConstr(gp.quicksum(element_section[c,l,s] for s in range(M_sections)) == 1)
+    # model.addConstr(gp.quicksum(element_section[c,l,s] for s in range(M_sections)) == 1)
+    
+  for l in range(1,n_levels):
+    model.addConstr(gp.quicksum(s*element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum((s*element_section[c,l-1,s] for s in range(M_sections))))
 
 for g in range(max_min_groups):
   #range of group g = upper bound - lower bound 
@@ -120,9 +133,16 @@ model.setObjective(gp.quicksum(element_section[c,l,s] * SectionCost[s] for s in 
 # Optimize model
 model.optimize()
 
+ns = 0
 for v in model.getVars():
-    if v.X > 0.5:
-        print(f"{v.VarName}, {v.x:g}") #{v.X:g}")
+    if "group_exists" in v.VarName and v.X > 0.5:
+      ns += 1
+        # print(f"{v.VarName}, {v.x:g}") #{v.X:g}")
 
 print(f"Obj: {model.ObjVal:g}")
 print(f"Time: {model.Runtime:g}")
+
+print("Groups: ", ns)
+
+print(test_data)
+print(SectionCost)
