@@ -93,8 +93,8 @@ def main():
                 "industrial": {"S":10,"C":25,"L":5,"min_s_in_c":1,"max_s_in_c":5,"min_l_per_s":1,"max_l_per_s":5}, 
                 "mid-rise": {"S":20,"C":30,"L":10,"min_s_in_c":2,"max_s_in_c":5,"min_l_per_s":2,"max_l_per_s":5}, 
                 "ltc": {"S":30,"C":50,"L":6,"min_s_in_c":2,"max_s_in_c":6,"min_l_per_s":1,"max_l_per_s":3},
-                "condo": {"S":100,"C":80,"L":60,"min_s_in_c":6,"max_s_in_c":15,"min_l_per_s":4,"max_l_per_s":10},
-                "hospital": {"S":100,"C":200,"L":25,"min_s_in_c":5,"max_s_in_c":13,"min_l_per_s":2,"max_l_per_s":5}}
+                "condo": {"S":30,"C":80,"L":60,"min_s_in_c":6,"max_s_in_c":15,"min_l_per_s":4,"max_l_per_s":10},
+                "hospital": {"S":30,"C":200,"L":25,"min_s_in_c":5,"max_s_in_c":13,"min_l_per_s":2,"max_l_per_s":5}}
     data = generate_data_set(classes, 5)
     with open("data.json","w") as f:
         json.dump(data,f)
