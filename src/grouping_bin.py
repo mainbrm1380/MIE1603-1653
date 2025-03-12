@@ -74,7 +74,8 @@ for c in range(n_cols):
     # model.addConstr(gp.quicksum(element_section[c,l,s] for s in range(M_sections)) == 1)
     
   for l in range(1,n_levels):
-    model.addConstr(gp.quicksum(s*element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum((s*element_section[c,l-1,s] for s in range(M_sections))))
+    if E[c,l] == 1:
+      model.addConstr(gp.quicksum(s*element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum((s*element_section[c,l-1,s] for s in range(M_sections))))
 
 for g in range(max_min_groups):
   #range of group g = upper bound - lower bound 

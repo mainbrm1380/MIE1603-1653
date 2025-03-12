@@ -60,7 +60,8 @@ for c in range(n_cols):
     model.addConstr(element_section[c,l] >= S[c,l])
   
   for l in range(n_levels-1):
-    model.addConstr(element_section[c,l+1] >= element_section[c,l])
+    if E[c,l+1] == 1:
+      model.addConstr(element_section[c,l+1] >= element_section[c,l])
 
 for g in range(max_min_groups):
   #range of group g = upper bound - lower bound 
