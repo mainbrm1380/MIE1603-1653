@@ -19,7 +19,7 @@ def get_heuristic_group_ub(columns):
     level_ub += len(set([col[lvl] for col in columns if col[lvl] > 0]))
   return min(col_ub,level_ub), max(col_ub,level_ub)
 
-data_path = r"C:\Users\pekar\Documents\GitHub\MIE1603-1653\data.json"
+data_path = r"C:\Users\Daniel\Documents\GitHub\MIE1603-1653\data.json"
 with open('data.json', 'r') as file:
     data = json.load(file)
 

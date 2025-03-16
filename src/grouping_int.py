@@ -1,8 +1,7 @@
 import gurobipy as gp
 from gurobipy import GRB
-from instance_generation import generate_instance
 
-test_data = [[0,2,1,1,0],[1,1,1,1,0]] #e_ij = 1 if col i exists at level j, bottom to top
+
 
 n_cols = len(test_data)
 n_levels = len(test_data[0])
