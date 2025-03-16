@@ -1,14 +1,15 @@
 import gurobipy as gp
 from gurobipy import GRB
 import json
+import psutil
+import os
+import sys
+import numpy as np
+# import matplotlib.pyplot as plt
+# import matplotlib.colors as mcolors
+# import seaborn as sns
 
-# test_data = [[4,2,1,1,0],[1,1,1,1,0], [3,2,1,1,1],[4,3,3,3,1],[0,0,2,2,0],[8,8,7,6,3]] #e_ij = 1 if col i exists at level j, bottom to top
-#INSTANCE GENERATION
-# num_Sections = 20
-# num_Cols = 10
-# num_Levels = 10
-# min_section_cost = 100
-# max_section_cost = 10000
+process = psutil.Process()
 
 def get_heuristic_group_ub(columns):
   col_ub = 0
@@ -19,22 +20,109 @@ def get_heuristic_group_ub(columns):
     level_ub += len(set([col[lvl] for col in columns if col[lvl] > 0]))
   return min(col_ub,level_ub), max(col_ub,level_ub)
 
-data_path = r"C:\Users\Daniel\Documents\GitHub\MIE1603-1653\data.json"
-with open('data.json', 'r') as file:
+# def heatmap(color_vals, annot_vals):
+#   unique_values_1 = np.unique(color_vals)
+#   unique_values_1 = unique_values_1[unique_values_1 > 0]
+
+#   unique_values_2 = np.unique(annot_vals)
+#   unique_values_2 = unique_values_2[unique_values_2 > 0]
+
+#   palette_1 = sns.color_palette("viridis", len(unique_values_1))
+#   palette_2 = sns.color_palette("viridis", len(unique_values_2))
+
+#   color_dict_1 = {0: (1, 1, 1)}  # White for -1
+#   for val, color in zip(unique_values_1, palette_1):
+#       color_dict_1[val] = color
+
+#   color_dict_2 = {0: (1, 1, 1)}  # White for 0
+#   for val, color in zip(unique_values_2, palette_2):
+#       color_dict_2[val] = color
+
+#   sorted_vals_1 = np.sort(list(color_dict_1.keys()))
+#   cmap_1 = mcolors.ListedColormap([color_dict_1[val] for val in sorted_vals_1])
+
+#   sorted_vals_2 = np.sort(list(color_dict_2.keys()))
+#   cmap_2 = mcolors.ListedColormap([color_dict_2[val] for val in sorted_vals_2])
+
+#   bounds_1 = np.append(sorted_vals_1, sorted_vals_1[-1] + 1) - .5
+#   norm_1 = mcolors.BoundaryNorm(bounds_1, cmap_1.N)
+
+#   bounds_2 = np.append(sorted_vals_2, sorted_vals_2[-1] + 1) - .5
+#   norm_2 = mcolors.BoundaryNorm(bounds_2, cmap_2.N)
+
+#   fig, axes = plt.subplots(1,2,figsize=(10,5))
+
+#   sns.heatmap(np.rot90(color_vals), annot=np.rot90(annot_vals), cmap=cmap_1, norm=norm_1,
+#               linewidths=0.5, linecolor="black", cbar=False, ax=axes[0])
+
+#   ax2 = sns.heatmap(np.rot90(annot_vals), annot=np.rot90(color_vals), cmap=cmap_2, norm=norm_2,
+#                     linewidths=.5, linecolor="black", cbar=True, ax=axes[1])
+
+#   # customizing the cbar
+#   cbar = ax2.collections[0].colorbar
+#   cbar.set_ticks(sorted_vals_2)
+#   cbar.set_ticklabels(sorted_vals_2)
+
+#   axes[0].set_title("Grouping of elements")
+#   axes[1].set_title("Section of elements")
+
+#   axes[0].axis("off")
+#   axes[1].axis("off")
+
+#   plt.tight_layout()
+#   plt.show()
+
+def lazy_callback(model, where):
+    if where == GRB.Callback.MIPSOL:  # Check if a new solution is found
+        # Retrieve the values of decision variables at the current solution
+        column_vals = model.cbGetSolution(column_in_group)
+        level_vals = model.cbGetSolution(level_in_group)
+        x_vals = model.cbGetSolution(x)
+
+        # Iterate through indices and add violated constraints
+        for g in range(max_min_groups):
+            for l in range(n_levels):
+                for c in range(n_cols):
+                    lhs = column_vals[g, c] + level_vals[g, l]  # Left-hand side
+                    rhs = 1 + x_vals[g, c, l]  # Right-hand side
+                    if lhs > rhs + 1e-6:  # Constraint is violated
+                        model.cbLazy(column_in_group[g, c] + level_in_group[g, l] <= 1 + x[g, c, l])
+
+if __name__ == "__main__":
+ 
+  print("===INSTANCE START")
+
+  
+  script, instance, opt = sys.argv
+
+  opt = int(opt)
+  # instance = "4"
+  # opt = "7"
+
+  #opt: 1 - only int, 2 - cont, 4 - lazy,  6 - cont+lazy
+  #opt: 3 - only bin, 5 - bin+cont, 7: bin+lazy, 8:bin+lazy+cont
+
+
+  folderpath = os.getcwd()
+  data_path = os.path.join(folderpath,"data.json")
+
+  with open(data_path, 'r') as file:
     data = json.load(file)
 
-def create_model(test_data, SectionCost):
-  max_min_groups, max_max_groups = get_heuristic_group_ub(test_data) #min(n_cols,n_levels) #TODO: NEED NEW HEURISTIC FOR THIS
+  i = instance
+  i_name = data[i]["name"]
+  print(f"Instance Name: {instance}-{i_name}")
+  test_data = data[i]["columns"]
+  SectionCost = data[i]["section_costs"]
+  n_cols = len(test_data)
+  n_levels = len(test_data[0])
+
+  max_min_groups, max_max_groups = get_heuristic_group_ub(test_data) #min(n_cols,n_levels) 
   
   min_cost = sum([SectionCost[i] for col in test_data for i in col])
   
   GroupCost = round(min_cost/max_max_groups)
   max_min_groups = min(100, max_min_groups)
-  print("=====")
-  print(data[i]["name"]," : ",i)
-  print("min cost: ",min_cost)
-  print("max_min_groups: ", max_min_groups)
-  print("group_cost: ", GroupCost)
   n_cols = len(test_data)
   n_levels = len(test_data[0])
   
@@ -56,7 +144,7 @@ def create_model(test_data, SectionCost):
 
   # # Create variables
   
-  print("add vars")
+  # print("add vars")
   x = model.addVars(Xgcl, vtype = GRB.BINARY, name="x")
 
   # SectionCost = [0,100,400,800,1600,3200,6400,12800,14000]
@@ -67,9 +155,6 @@ def create_model(test_data, SectionCost):
   level_in_group = model.addVars(max_min_groups, n_levels, vtype = GRB.BINARY, name="level_in_group")
 
   # can these be continuous? or must be int?
-  group_lower_bound = model.addVars(max_min_groups, vtype = GRB.INTEGER, name="group_lb", lb = 0, ub = n_levels)
-  group_upper_bound = model.addVars(max_min_groups, vtype = GRB.INTEGER, name="group_ub", lb = 0, ub = n_levels)
-  group_level_range = model.addVars(max_min_groups, vtype = GRB.INTEGER, name="group_range", lb = 0, ub = n_levels)
 
   #section size variables
   group_section = model.addVars(Gs, vtype = GRB.BINARY, name="group_section")
@@ -84,22 +169,35 @@ def create_model(test_data, SectionCost):
   # or has bin var for section of each element, and multiple by cost of that section.
   # 4 variations?? 
 
-  Zu = model.addVars(max_min_groups, n_levels, vtype = GRB.BINARY, name="Zu")
-  Zl = model.addVars(max_min_groups, n_levels, vtype = GRB.BINARY, name="Zl")
+  if opt in [2,5,6,8]:
+    group_lower_bound = model.addVars(max_min_groups, vtype = GRB.CONTINUOUS, name="group_lb", lb = 0, ub = n_levels)
+    group_upper_bound = model.addVars(max_min_groups, vtype = GRB.CONTINUOUS, name="group_ub", lb = 0, ub = n_levels)
+    group_level_range = model.addVars(max_min_groups, vtype = GRB.CONTINUOUS, name="group_range", lb = 0, ub = n_levels)
+    Zu = model.addVars(max_min_groups, n_levels, vtype = GRB.CONTINUOUS, name="Zu")
+    Zl = model.addVars(max_min_groups, n_levels, vtype = GRB.CONTINUOUS, name="Zl")
+  else:
+    group_lower_bound = model.addVars(max_min_groups, vtype = GRB.INTEGER, name="group_lb", lb = 0, ub = n_levels)
+    group_upper_bound = model.addVars(max_min_groups, vtype = GRB.INTEGER, name="group_ub", lb = 0, ub = n_levels)
+    group_level_range = model.addVars(max_min_groups, vtype = GRB.INTEGER, name="group_range", lb = 0, ub = n_levels)
+    Zu = model.addVars(max_min_groups, n_levels, vtype = GRB.BINARY, name="Zu")
+    Zl = model.addVars(max_min_groups, n_levels, vtype = GRB.BINARY, name="Zl")
 
-  print("add elem constrs")
+  # print("add elem constrs")
   for c in range(n_cols):
     for l in range(n_levels):
+
+      model.addConstr(gp.quicksum(element_section[c,l,s] for s in range(M_sections)) == E[c,l])
+
       #sum of Xgcl over all groups must = if col at that level exists
       model.addConstr(gp.quicksum(x[g,c,l] for g in range(max_min_groups)) == E[c,l])
       model.addConstr(gp.quicksum(s * element_section[c,l,s] for s in range(M_sections)) >= S[c,l])
       # model.addConstr(gp.quicksum(element_section[c,l,s] for s in range(M_sections)) == 1)
       
     for l in range(1,n_levels):
-      if E[c,l] == 1:
-        model.addConstr(gp.quicksum(s*element_section[c,l,s] for s in range(M_sections)) >= gp.quicksum((s*element_section[c,l-1,s] for s in range(M_sections))))
+      if E[c,l] == 1 and E[c,l-1] == 1:
+        model.addConstr(gp.quicksum(s*element_section[c,l,s] for s in range(M_sections)) <= gp.quicksum((s*element_section[c,l-1,s] for s in range(M_sections))))
 
-  print("add grp constrs")
+  # print("add grp constrs")
   for g in range(max_min_groups):
     print(g, g/max_min_groups) 
     #range of group g = upper bound - lower bound 
@@ -126,7 +224,7 @@ def create_model(test_data, SectionCost):
         #if element is in that group, that group exists
         model.addConstr(group_exists[g] >= x[g,c,l])
 
-  print("add lvl constrs")
+  # print("add lvl constrs")
   for g in range(max_min_groups):
     for l in range(n_levels):
 
@@ -152,42 +250,56 @@ def create_model(test_data, SectionCost):
         #todo: lazily constraint??
         model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
 
-  model.setObjective(gp.quicksum(element_section[c,l,s] * SectionCost[s] for s in range(M_sections) for c in range(n_cols) for l in range(n_levels)) + GroupCost*gp.quicksum(group_exists),GRB.MINIMIZE)
+  model.setObjective(gp.quicksum(element_section[c,l,s] * SectionCost[s] for s in range(M_sections) for c in range(n_cols) for l in range(n_levels)) + GroupCost*gp.quicksum(group_exists) - gp.quicksum(group_upper_bound) + gp.quicksum(group_lower_bound),GRB.MINIMIZE)
 
-  return model
+  model.setParam('TimeLimit', 1800)
+  model.setParam('SoftMemLimit', 10)
 
-for i in range(31,41):
-  i = str(i)
+  if opt in [4,6,7,8]:
+    model.Params.LazyConstraints = 1
+    model.optimize(lazy_callback)
+  else:
+    model.optimize()
 
-  test_data = data[i]["columns"]
-  SectionCost = data[i]["section_costs"]
-  # SectionCost[:] = [x / 1000 for x in SectionCost]
-  # print(SectionCost)
-  # print("max group_cost: ", min_cost/max_max_groups)
-  # GroupCost = 0
+  # return model, x, element_section, GroupCost, column_in_group, level_in_group, max_min_groups
 
-  model = create_model(test_data, SectionCost)
-
-  # test_data = generate_instance(num_Sections,num_Cols,num_Levels,min_s_in_c=1,max_s_in_c=4)
-  # SectionCost = generate_section_costs(num_Sections,min_section_cost,max_section_cost)
-
-  
   # model.write("group-optim-toy.lp")
 
   # Optimize model
-  # model.setParam('OutputFlag', False )
-  model.optimize()
 
   ns = 0
   for v in model.getVars():
       if "group_exists" in v.VarName and v.X > 0.5:
         ns += 1
-          # print(f"{v.VarName}, {v.x:g}") #{v.X:g}")
 
   print(f"Obj: {model.ObjVal:g}")
   print(f"Time: {model.Runtime:g}")
-
+  print("Memory Used (MiB): {}".format(round(process.memory_info().rss / 1024 ** 2,2)))
   print("Groups: ", ns)
 
-  # print(test_data)
-  # print(SectionCost)"
+  grouped_elements = np.full((n_cols, n_levels), 0)  # -1 as default (if element doesn't exist)
+
+  for g, i, j in x.keys():
+      if x[g, i, j].X > 0.5:  # Check if x[g, i, j] is active
+          grouped_elements[i, j] = g+1
+
+  print("Original columns: ", test_data)
+  print("Section costs: ", SectionCost)
+  print("Group cost: ", GroupCost)
+
+  print("Grouped elements: ", grouped_elements.tolist())
+
+  section_of_elements = np.full((n_cols, n_levels), 0)
+
+  for c, l, s in element_section.keys():
+      if element_section[c, l, s].X > 0.5:
+        section_of_elements[c, l] = s
+
+  print("Element sections: ", section_of_elements.tolist())
+
+  heatmap(grouped_elements, section_of_elements)
+
+  print("---ALGORITHM END")
+
+
+
