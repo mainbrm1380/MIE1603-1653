@@ -245,10 +245,10 @@ if __name__ == "__main__":
       #if a level is within lower/upper bound, it's in the group 
       model.addConstr(1+level_in_group[g,l] >= Zu[g,l]+Zl[g,l])
 
-      for c in range(n_cols):
-        #if column and level are in the group, so is the element
-        #todo: lazily constraint??
-        model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
+      # for c in range(n_cols):
+      #   #if column and level are in the group, so is the element
+      #   #todo: lazily constraint??
+      #   model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
 
   model.setObjective(gp.quicksum(element_section[c,l,s] * SectionCost[s] for s in range(M_sections) for c in range(n_cols) for l in range(n_levels)) + GroupCost*gp.quicksum(group_exists) - gp.quicksum(group_upper_bound) + gp.quicksum(group_lower_bound),GRB.MINIMIZE)
 
@@ -259,6 +259,11 @@ if __name__ == "__main__":
     model.Params.LazyConstraints = 1
     model.optimize(lazy_callback)
   else:
+    for g in range(max_min_groups):
+      for l in range(n_levels):
+        for c in range(n_cols):
+        #if column and level are in the group, so is the element
+          model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
     model.optimize()
 
   # return model, x, element_section, GroupCost, column_in_group, level_in_group, max_min_groups

@@ -4,7 +4,7 @@ import json
 def generate_column_by_number_of_sections(L, S, s_in_c):
     data = [0]
     while max(data) == 0:
-        sections = sorted(random.choices(S, k=s_in_c))
+        sections = sorted(random.choices(S, k=s_in_c),reverse=True)
         level_breakpoints = [0] + sorted(random.choices(L, k = s_in_c+1)) #+1 because there can be 0 on top and bottom
         data = [0 * level_breakpoints[0]]
         for i in range(s_in_c):
@@ -31,7 +31,7 @@ def generate_column_by_levels_per_section(L,S,min_l_per_s, max_l_per_s):
         first_level_zero = random.randint(0,1)
         last_level_zero = random.randint(0,1)
         
-        sections = sorted(random.choices(S,k = len(level_lengths) - first_level_zero - last_level_zero))
+        sections = sorted(random.choices(S,k = len(level_lengths) - first_level_zero - last_level_zero),reverse=True)
 
         data = [0] * level_lengths[0]*first_level_zero
 
