@@ -28,7 +28,7 @@ for instance in os.listdir(results_folder):
     cont = False
     empty_counter = 0
 
-    instances[j] = {"instance":"","opt":opt,"dual":{"bound":[],"expanded":[],"time":[]},"primal":{"bound":[],"gap":[],"time":[]},"hit_time_limit":False,"hit_memory_limit":False,"best_dual":0,"best_primal":0,"explored":0,"iterations":0,"infeasible":False,"optimal":False,"time":0,"groups":[],"sections":[], "presolve_time":0,"presolve_remove_rows":0,"presolve_remove_cols":0,"presolved_rows":0,"presolved_cols":0,"presolved_nonzeros":0,"num_cont_vars":0,"num_int_vars":0,"num_bin_vars":0,"original_rows":0,"original_cols":0,"original_nonzeros":0,"presolved_nonzeros":0,"original_cont_vars":0,"original_int_vars":0,"original_bin_vars":0,"memory":0}
+    instances[j] = {"instance":"","opt":opt,"dual":{"bound":[],"time":[]},"primal":{"bound":[],"time":[]},"gap":{"gap":[],"time":[]},"hit_time_limit":False,"hit_memory_limit":False,"best_dual":0,"best_primal":0,"explored":0,"iterations":0,"infeasible":False,"optimal":False,"time":0,"groups":[],"sections":[], "presolve_time":0,"presolve_remove_rows":0,"presolve_remove_cols":0,"presolved_rows":0,"presolved_cols":0,"presolved_nonzeros":0,"num_cont_vars":0,"num_int_vars":0,"num_bin_vars":0,"original_rows":0,"original_cols":0,"original_nonzeros":0,"presolved_nonzeros":0,"original_cont_vars":0,"original_int_vars":0,"original_bin_vars":0,"memory":0,"best_gap":0,"num_groups":0}
     
     for l in f:
         if "Instance Name: " in l:
@@ -79,39 +79,23 @@ for instance in os.listdir(results_folder):
             else:
                 line = [i for i in l.split(" ") if i != '']
                 time = float(line[-1].strip()[:-1])
-                if 'H' in l:
-                    new_primal = float(line[2])
-                    new_dual = float(line[3])
-                elif '*' in l:
-                    new_primal = float(line[3])
-                    new_dual = float(line[4])
-                elif "cutoff" in l or "infeasible" in l:
-                    if line[4] == "-":
-                        new_primal = 0
-                    else:
-                        new_primal = float(line[4])
-                    if line[5] == "infeasible":
-                        new_dual = 0
-                    else:
-                        new_dual = float(line[5])
-                else:
-                    if line[2] == "-":
-                      new_primal = float(line[4])
-                      new_dual = float(line[5])
-
-                    else:
-                      if line[5] == "-":
-                          new_primal = 0
-                      else:
-                          new_primal = float(line[5])
-                      if line[6] == "-":
-                          new_dual = 0
-                      else:
-                          new_dual = float(line[6])
-                instances[j]["primal"]["bound"].append(new_primal)
-                instances[j]["primal"]["time"].append(time)
-                instances[j]["dual"]["bound"].append(new_dual)
-                instances[j]["dual"]["time"].append(time)     
+                try:
+                    gap_index = b = [y for y,x in enumerate(line) if "%" in x][0]
+                    new_gap = float(line[gap_index][:-1])
+                    new_dual = float(line[gap_index-1])
+                    new_primal = float(line[gap_index-2])
+                    instances[j]["primal"]["bound"].append(new_primal)
+                    instances[j]["primal"]["time"].append(time)
+                    instances[j]["dual"]["bound"].append(new_dual)
+                    instances[j]["dual"]["time"].append(time)     
+                    instances[j]["gap"]["gap"].append(new_gap)
+                    instances[j]["gap"]["time"].append(time)
+                except:
+                    new_dual = float(line[-4])
+                    instances[j]["dual"]["bound"].append(new_dual)
+                    instances[j]["dual"]["time"].append(time)     
+                
+                
 
         elif "Model is infeasible" in l:
             instances[j]["infeasible"] = True
@@ -135,6 +119,7 @@ for instance in os.listdir(results_folder):
             else:
                 dual = float(dual[:-1])
             instances[j]["best_dual"] = dual
+            instances[j]["best_gap"] = l.split(" ")[-1].strip()[:-1] 
         elif "Obj:" in l:
             primal = l.split(" ")[1]
             if primal == "inf":
@@ -145,6 +130,8 @@ for instance in os.listdir(results_folder):
             if math.isinf(primal):
                 primal = 0
             instances[j]["best_primal"] = primal
+        elif "Groups: " in l:
+            instances[j]["num_groups"] = int(l.split(" ")[-1].strip())
         elif "Time:" in l:
             timeused = float(l.split(" ")[-1])
             instances[j]["time"] = timeused
