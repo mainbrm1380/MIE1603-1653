@@ -28,7 +28,16 @@ for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
     cont = False
     empty_counter = 0
 
-    instances[j] = {"instance":"","opt":opt,"dual":{"bound":[],"time":[]},"primal":{"bound":[],"time":[]},"gap":{"gap":[],"time":[]},"hit_time_limit":False,"hit_memory_limit":False,"best_dual":0,"best_primal":0,"explored":0,"iterations":0,"infeasible":False,"optimal":False,"time":0,"groups":[],"sections":[], "presolve_time":0,"presolve_remove_rows":0,"presolve_remove_cols":0,"presolved_rows":0,"presolved_cols":0,"presolved_nonzeros":0,"num_cont_vars":0,"num_int_vars":0,"num_bin_vars":0,"original_rows":0,"original_cols":0,"original_nonzeros":0,"presolved_nonzeros":0,"original_cont_vars":0,"original_int_vars":0,"original_bin_vars":0,"memory":0,"best_gap":0,"num_groups":0}
+    instances[j] = {"instance":"","opt":opt,"dual":{"bound":[],"time":[]},
+                    "primal":{"bound":[],"time":[]},"gap":{"gap":[],"time":[]},
+                    "hit_time_limit":False,"hit_memory_limit":False,"best_dual":0,
+                    "best_primal":0,"explored":0,"iterations":0,"infeasible":False,
+                    "optimal":False,"time":0,"groups":[],"sections":[], "presolve_time":0,
+                    "presolve_remove_rows":0,"presolve_remove_cols":0,"presolved_rows":0,
+                    "presolved_cols":0,"presolved_nonzeros":0,"num_cont_vars":0,"num_int_vars":0,
+                    "num_bin_vars":0,"original_rows":0,"original_cols":0,"original_nonzeros":0,
+                    "presolved_nonzeros":0,"original_cont_vars":0,"original_int_vars":0,
+                    "original_bin_vars":0,"memory":0,"best_gap":0,"num_groups":0}
     
     for l in f:
         if "Instance Name: " in l:
@@ -95,8 +104,10 @@ for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
                     instances[j]["dual"]["bound"].append(new_dual)
                     instances[j]["dual"]["time"].append(time)     
                 
-                
-
+        elif "Time limit reached" in l:
+            instances[j]["hit_time_limit"] = True
+        elif "Memory limit reached" in l:
+            instances[j]["hit_memory_limit"] = True
         elif "Model is infeasible" in l:
             instances[j]["infeasible"] = True
         elif "Memory Used" in l:
