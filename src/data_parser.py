@@ -18,7 +18,7 @@ instances = {}
 j = 0
 # instance = "cp-test.txt"
 
-for instance in os.listdir(results_folder):
+for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
     j += 1
     fname = os.path.join(results_folder, instance)
 

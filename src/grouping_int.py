@@ -277,34 +277,45 @@ if __name__ == "__main__":
   # Optimize model
 
   ns = 0
-  for v in model.getVars():
-      if "group_exists" in v.VarName and v.X > 0.5:
-        ns += 1
+
 
   print(f"Obj: {model.ObjVal:g}")
   print(f"Time: {model.Runtime:g}")
   print("Memory Used (MiB): {}".format(round(process.memory_info().rss / 1024 ** 2,2)))
-  print("Groups: ", ns)
 
-  grouped_elements = np.full((n_cols, n_levels), 0)  # -1 as default (if element doesn't exist)
+  try:
 
-  for g, i, j in x.keys():
-      if x[g, i, j].X > 0.5:  # Check if x[g, i, j] is active
-          grouped_elements[i, j] = g+1
+    for v in model.getVars():
+      if "group_exists" in v.VarName and v.X > 0.5:
+        ns += 1
+    print("Groups: ", ns)
+
+
+    grouped_elements = np.full((n_cols, n_levels), 0)  # -1 as default (if element doesn't exist)
+
+    for g, i, j in x.keys():
+        if x[g, i, j].X > 0.5:  # Check if x[g, i, j] is active
+            grouped_elements[i, j] = g+1
+
+    print("Grouped elements: ", grouped_elements.tolist())
+
+    section_of_elements = np.full((n_cols, n_levels), 0)
+
+    for c, l in element_section.keys():
+        if element_section[c, l].X > 0.5:
+          section_of_elements[c, l] = element_section[c, l].X
+
+    print("Element sections: ", section_of_elements.tolist())
+
+  except:
+     print("NO SOLUTION")
 
   print("Original columns: ", test_data)
   print("Section costs: ", SectionCost)
   print("Group cost: ", GroupCost)
 
-  print("Grouped elements: ", grouped_elements.tolist())
 
-  section_of_elements = np.full((n_cols, n_levels), 0)
 
-  for c, l in element_section.keys():
-      if element_section[c, l].X > 0.5:
-        section_of_elements[c, l] = element_section[c, l].X
-
-  print("Element sections: ", section_of_elements.tolist())
 
   # heatmap(grouped_elements, section_of_elements)
 

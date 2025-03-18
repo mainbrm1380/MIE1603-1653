@@ -36,8 +36,8 @@
 ## This value is used at two places:
 ## 1. To set the number of CPUs in the resource allocation request. 
 ## 2. Assigned to SLURM_TASKS_PER_NODE environment variable.
-#SBATCH --ntasks=10
-#SBATCH --ntasks-per-node=10
+#SBATCH --ntasks=16
+#SBATCH --ntasks-per-node=16
 #SBATCH --ntasks-per-core=1
 
 ## "--cpus-per-task" tells the expected count of CPU "threads" per task
@@ -83,4 +83,4 @@ source ~/env_gurobi/bin/activate
 ##
 ## !!!--USER ACTION--!!! Create `results` directory in the working directory.
 
-parallel -j 10 "python3 grouping_int.py {1} {2} | tee /gpfs/fs0/scratch/b/beck/pekardan/grouping/results_run_int_new_{1}_{2}.txt" ::: {5..24} ::: 1 2 4 6
+parallel -j 16 "python3 grouping_int.py {1} {2} | tee /gpfs/fs0/scratch/b/beck/pekardan/grouping/results_run_int_new_{1}_{2}.txt" ::: {5..24} ::: 1 2 4 6
