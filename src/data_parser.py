@@ -12,15 +12,18 @@ def isfloat(item):
     except:
         return False
 
-folderpath = os.getcwd()
-results_folder = os.path.join(folderpath,"logs")
+# folderpath = os.getcwd()
+
+folderpath = r"C:\Users\Daniel\Documents\GitHub\tsp-sd\logs\original"
+
+# results_folder = os.path.join(folderpath,"logs")
 instances = {}
 j = 0
 # instance = "cp-test.txt"
 
-for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
+for instance in [i for i in os.listdir(folderpath) if "MIP" in i]:
     j += 1
-    fname = os.path.join(results_folder, instance)
+    fname = os.path.join(folderpath, instance)
 
     opt = fname[-5]
 
@@ -28,7 +31,7 @@ for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
     cont = False
     empty_counter = 0
 
-    instances[j] = {"instance":"","opt":opt,"dual":{"bound":[],"time":[]},
+    instances[j] = {"instance":"","algorithm":"","opt":opt,"dual":{"bound":[],"time":[]},
                     "primal":{"bound":[],"time":[]},"gap":{"gap":[],"time":[]},
                     "hit_time_limit":False,"hit_memory_limit":False,"best_dual":0,
                     "best_primal":0,"explored":0,"iterations":0,"infeasible":False,
@@ -42,7 +45,11 @@ for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
     for l in f:
         if "Instance Name: " in l:
             instances[j]["instance"] = l.split(" ")[-1].strip()
-
+        elif "ALG:" in l:
+            alg_name = l.split(" ")[1][:-1]
+            if alg_name == "MIP-ADD-2":
+                alg_name = "MIP-ADD"
+            instances[j]["algorithm"] = alg_name
         elif "Optimize a model with" in l:
             line = l.strip().split(" ")
             instances[j]["original_rows"] = int(line[4])
@@ -85,6 +92,10 @@ for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
                 empty_counter += 1
                 if empty_counter == 2:
                     cont = False
+            elif 'Explored' in l or 'Cutting' in l:
+                cont = False
+            elif 'infeasible' in l or 'cutoff' in l:
+                pass
             else:
                 line = [i for i in l.split(" ") if i != '']
                 time = float(line[-1].strip()[:-1])
@@ -153,7 +164,7 @@ for instance in [i for i in os.listdir(results_folder) if "old" not in i]:
             sections = eval(l.split("Element sections:  ")[-1])
             instances[j]["sections"] = sections
             
-results_fname = os.path.join(folderpath,"results","MIP-results.json")
+results_fname = os.path.join(r"C:\Users\Daniel\Documents\GitHub\tsp-sd\results\MIP-results-tspsd-og.json")
 
 with open(results_fname,'w') as res:
     json.dump(instances,res)

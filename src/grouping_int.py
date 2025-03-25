@@ -268,7 +268,6 @@ if __name__ == "__main__":
         #if column and level are in the group, so is the element
           model.addConstr(column_in_group[g,c]+level_in_group[g,l] <= 1 + x[g,c,l])
     model.optimize()
-    model.optimize()
 
   # return model, x, element_section, GroupCost, column_in_group, level_in_group, max_min_groups
 
